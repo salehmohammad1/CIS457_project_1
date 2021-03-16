@@ -19,6 +19,9 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <unistd.h>
+#include <sys/stat.h>           //gets file size using stat()
+#include <sys/sendfile.h>       //used for sending a file
+#include <fcntl.h>              //used for file control
 
 /**********************************************************************
 * Name:     error
@@ -44,11 +47,12 @@ void error(char *msg)
 **********************************************************************/
 int main(int argc, char *argv[])
 {
-    int sockfd, portno, n;
+    int sockfd, portno, n, size, status, filehandle, choice;
     struct sockaddr_in serv_addr;
+    struct stat obj;
     struct hostent *server;
+    char buffer[1000], command[5], filename[20], *f;
 
-    char buffer[1000];
     if (argc < 3) {
        fprintf(stderr,"usage %s hostname port\n", argv[0]);
        exit(0);
@@ -73,11 +77,55 @@ int main(int argc, char *argv[])
     if(connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0) 
        error("ERROR connecting");
     
+    int i = 1;
+
     while(1) 
     {
-        printf("Please enter the message: ");
-        bzero(buffer,1000);
-        fgets(buffer,999,stdin);
+        printf("Enter a choice to perform:\n\n");
+        printf("(1) CONNECT - allows to client to connect to server w/ IP address & port #\n");
+        printf("(2) LIST - allows server to return a list of files in current directory\n");
+        printf("(3) RETRIEVE - allows a client to get a file specified by filename from server\n");
+        printf("(4) STORE - allows a client to send a file specified by filename to server\n");
+        printf("(5) QUIT - allows the client to terminate the control connection")
+        scanf("%d", &choice);
+
+        switch(choice)
+        {
+            case 1:
+                break;
+
+            case 2:
+                strcpy(buffer, "list ");        //copy string "list" to buffer to let server know what to perform
+                send(sockfd, buffer, 100, 0);  //send the buffer to the server
+                recv(sockfd, &size, sizeof(int), 0);    
+                f = malloc(size);
+                recv(sockfd, f, size, 0);
+                filehandle = creat("temp.txt", O_WRONLY);   //open file for writing only
+                write(filehandle, f, size, 0);
+                close(filehandle);
+                printf("Listing:\n");
+                system("cat temp.txt");
+                break;
+
+            case 3: 
+                strcpy(buffer, "retrieve ")
+                printf("Enter filename to retrieve:" );
+                scanf("%s", filename);
+                strcat(buffer, filename)
+                send(sockfd, buffer, 100, 0);
+                recv(sockfd, &size, sizeof(int), 0);
+                if(!size)
+                {
+                    printf("ERROR: FILE DOES NOT EXIST\n\n");
+                    break;
+                }
+                f = malloc(size);
+                recv(sockfd, f, size, 0);
+                while(1)
+                {
+                    
+                }
+        }
 
         if((n = send(sockfd,buffer,strlen(buffer),0) < 0))
             error("ERROR writing to socket");
