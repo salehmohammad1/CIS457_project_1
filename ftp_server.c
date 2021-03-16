@@ -1,13 +1,16 @@
 /**********************************************************************
-* CIS 457 Project 1
-* Authors: Taylor Rieger & Mohammed Saleh
-* Date Modified: March 16, 2021
-* Description: This program creates an FTP server to connect to an 
-               FTP client that allows 5 different commands: Connect,
-               List, Retrieve, Store, and Quit.
-* References: Initial code was utilized from Homework 1 provided code
-              to start the client and server connections.                
+* Course:       CIS 457 - Project 1
+* Author(s):    Taylor Rieger & Mohammed Saleh
+* Date:         March 16, 2021
+* Description:  This program creates an FTP server to connect to an 
+*               FTP client that allows 5 different commands: Connect,
+*               List, Retrieve, Store, and Quit.
+* References:   Initial code was utilized from Homework 1 provided code
+*               to start the client and server connections.   
+* Professor:    Dr. Vijay Bhuse
+* Filename:     ftp_server.c            
 **********************************************************************/
+
 #include <stdio.h>
 #include <sys/types.h> 
 #include <sys/socket.h>
@@ -16,13 +19,28 @@
 #include <strings.h>
 #include <unistd.h>
 
-
+/**********************************************************************
+* Name:     error
+* Author:   Dr. Vijay Bhuse
+* Date:     March 16, 2021
+* Description: Provides an error message and exits the program.
+* @param *msg - the message to provide the screen for the error
+**********************************************************************/
 void error(char *msg)
 {
     perror(msg);
     exit(1);
 }
 
+/**********************************************************************
+* Name:     main
+* Author:   Dr. Vijay Bhuse, additions Taylor Rieger
+* Date:     March 16, 2021
+* Description: Connects the server to the client and responds to the 
+               client depending what option they choose.
+* @param argc 
+* @param *argv 
+**********************************************************************/
 int main(int argc, char *argv[])
 {
      int sockfd, newsockfd, portno, clilen;
