@@ -18,6 +18,9 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <unistd.h>
+#include <sys/stat.h>       //gets file size using stat()
+#include <sys/sendfile.h>   //used for sending a file
+#include <fcntl.h>          //used for file control options
 
 /**********************************************************************
 * Name:     error
@@ -43,10 +46,11 @@ void error(char *msg)
 **********************************************************************/
 int main(int argc, char *argv[])
 {
-     int sockfd, newsockfd, portno, clilen;
-     char buffer[1000];
+     int sockfd, newsockfd, portno, clilen, n, filehandle, size, c;
+     char buffer[100], command[5], filename[20];
      struct sockaddr_in serv_addr, cli_addr;
-     int n;
+     struct stat obj;
+   
      if (argc < 2) {
          fprintf(stderr,"ERROR, no port provided\n");
          exit(1);
