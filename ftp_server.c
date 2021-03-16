@@ -22,6 +22,12 @@
 #include <sys/sendfile.h>   //used for sending a file
 #include <fcntl.h>          //used for file control options
 
+void connect(int);
+
+void list(int);
+
+
+
 /**********************************************************************
 * Name:     error
 * Author:   Dr. Vijay Bhuse
@@ -55,9 +61,11 @@ int main(int argc, char *argv[])
          fprintf(stderr,"ERROR, no port provided\n");
          exit(1);
      }
+     
      sockfd = socket(AF_INET, SOCK_STREAM, 0);
      if (sockfd < 0) 
         error("ERROR opening socket");
+
      bzero((char *) &serv_addr, sizeof(serv_addr));
      portno = atoi(argv[1]);
      serv_addr.sin_family = AF_INET;
@@ -79,7 +87,7 @@ int main(int argc, char *argv[])
          printf("\n");
          printf("Here is the message: %s\n", buffer);
          n = write(newsockfd,"I got your message!", 18);
-         bzero(buffer, 1000);
+       bzero(buffer, 1000);
      }
     
      if (n == 0) 
@@ -91,4 +99,73 @@ int main(int argc, char *argv[])
      else if (n < 0) error("ERROR writing to socket");
      
      return 0; 
+	
+}	
+
+void connect(int sk ) {
+
+
+
+ int n;
+   char buffer[256];
+      
+   bzero(buffer,256);
+   n = read(sk,buffer,255);
+   if (n < 0) error("ERROR reading from socket");
+
+   if(strlen(buffer)<1)
+   {
+	close(sk);
+	exit(0);
+   }
+   printf("BUFFER:%s.\n",buffer);
+   //Call the list function if LIST is selected
+   if(strcmp(buffer,"LIST")==0)
+   {
+	list(sk);
+   }
+   //Call the retrieve function if retrieve is selected
+   if (strcmp(buffer,"RETR")==0) 
+   {
+        write(sk, "RETR received",13);
+        fSend(sk);
+   }
+   //store command:receive a file from client and store in server directory
+   if (strcmp(buffer,"STORE")==0) {
+        write(sk, "STORE received",14); //ack command(fixes consecutive write short message merge)
+        fStore(sk); //run function to store file, pass socket number
+   }
+   //Disconnect from the server if QUIT is selected
+   if(strcmp(buffer,"QUIT")==0){
+	close(sk);
+	clientcon=0;
+	exit(0);
+   }
+
 }
+		}
+
+
+
+
+
+
+void list(int sk) {
+
+	char files[1000];
+	int n;
+	DIR *d;
+	struct dirent *dir;
+	d = opendir(".");
+	if(d){
+		while((dir = readdir(d)) != NULL){
+			strcat(files, dir->d_name );
+			strcat(files,"\n");
+		} 
+		closedir(d);
+	}
+	n= write(sk, strlen(files));
+	if (n<0){
+		error("error establishing scoket ");
+	}}
+
