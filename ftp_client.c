@@ -72,34 +72,46 @@ int main(int argc, char *argv[])
         {
             //CONNECT option
             case 1:
+
                 if (argc < 3) {
                     fprintf(stderr,"usage %s hostname port\n", argv[0]);
                     exit(0);
                 }
+                //save the port number and open socket
                 portno = atoi(argv[2]);
                 sockfd = socket(AF_INET, SOCK_STREAM, 0);
                 if (sockfd < 0) 
                     error("ERROR opening socket");
-    
+                
+                //get the port number of the server
                 server = gethostbyname(argv[1]);
-   
+
+                //error check if the server is available
                 if (server == NULL) {
                     fprintf(stderr,"ERROR, no such host\n");
                     exit(0);
                 }
+                //initiate the connection
                 bzero((char *) &serv_addr, sizeof(serv_addr));
                 serv_addr.sin_family = AF_INET;
                 bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
                 serv_addr.sin_port = htons(portno);
+                //error checking
                 if(connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0) 
                     error("ERROR connecting");
                 break;
 
             //LIST option
             case 2:
-                strcpy(buffer, "list ");        //copy string "list" to buffer to let server know what to perform
-                send(sockfd, buffer, 100, 0);  //send the buffer to the server
-                recv(sockfd, &size, sizeof(int), 0);    
+                
+                //copy string "list" to buffer to let server know what to perform
+                strcpy(buffer, "list ");  
+                  
+                //send data to the server and receive data back     
+                send(sockfd, buffer, 100, 0);  
+                recv(sockfd, &size, sizeof(int), 0);  
+
+                //allocates the exact amount of memory needed for the size of the received data
                 f = malloc(size);
                 recv(sockfd, f, size, 0);
                 filehandle = creat("temp.txt", O_WRONLY);   //open file for writing only
@@ -139,6 +151,7 @@ int main(int argc, char *argv[])
                 system(buffer);
                 break;
 
+            //STORE option
             case 4: 
                 strcpy(buffer, "store ");
                 printf("Enter filename to store to server:");
@@ -159,6 +172,7 @@ int main(int argc, char *argv[])
                     printf("Failure: File Not Stored\n");
                 break;
 
+            //QUIT option
             case 5:
                 strcpy(buffer, "quit ");
                 send(sockfd, buffer, 100, 0);
