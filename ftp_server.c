@@ -52,7 +52,7 @@ void error(char *msg)
 **********************************************************************/
 int main(int argc, char *argv[])
 {
-     int sockfd, newsockfd, portno, clilen, n, filehandle, size, c;
+     int sockfd, newsockfd, portno, clilen, n, filehandle, size, c, i;
      char buffer[100], command[5], filename[20];
      struct sockaddr_in serv_addr, cli_addr;
      struct stat obj;
@@ -78,16 +78,16 @@ int main(int argc, char *argv[])
    
      clilen = sizeof(cli_addr);
      newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen); 
+     i = 1;
      if (newsockfd < 0) 
           error("ERROR on accept");
      bzero(buffer,1000);
      
-     while((n = recv(newsockfd, buffer, 999, 0)) > 0)
+     while(1)
      {
-         printf("\n");
-         printf("Here is the message: %s\n", buffer);
-         n = write(newsockfd,"I got your message!", 18);
-       bzero(buffer, 1000);
+         n = recv(newsockfd, buffer, 100, 0);
+         
+         bzero(buffer, 1000);
      }
     
      if (n == 0) 

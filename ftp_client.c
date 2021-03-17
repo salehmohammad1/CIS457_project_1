@@ -52,30 +52,6 @@ int main(int argc, char *argv[])
     struct stat obj;
     struct hostent *server;
     char buffer[1000], command[5], filename[20], *f;
-
-    if (argc < 3) {
-       fprintf(stderr,"usage %s hostname port\n", argv[0]);
-       exit(0);
-    }
-    portno = atoi(argv[2]);
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) 
-        error("ERROR opening socket");
-    
-    server = gethostbyname(argv[1]);
-   
-    if (server == NULL) {
-        fprintf(stderr,"ERROR, no such host\n");
-        exit(0);
-    }
-    bzero((char *) &serv_addr, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    bcopy((char *)server->h_addr, 
-         (char *)&serv_addr.sin_addr.s_addr,
-         server->h_length);
-    serv_addr.sin_port = htons(portno);
-    if(connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0) 
-       error("ERROR connecting");
     
     int i = 1;
 
@@ -92,6 +68,27 @@ int main(int argc, char *argv[])
         switch(choice)
         {
             case 1:
+                if (argc < 3) {
+                    fprintf(stderr,"usage %s hostname port\n", argv[0]);
+                    exit(0);
+                }
+                portno = atoi(argv[2]);
+                sockfd = socket(AF_INET, SOCK_STREAM, 0);
+                if (sockfd < 0) 
+                    error("ERROR opening socket");
+    
+                server = gethostbyname(argv[1]);
+   
+                if (server == NULL) {
+                    fprintf(stderr,"ERROR, no such host\n");
+                    exit(0);
+                }
+                bzero((char *) &serv_addr, sizeof(serv_addr));
+                serv_addr.sin_family = AF_INET;
+                bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
+                serv_addr.sin_port = htons(portno);
+                if(connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0) 
+                    error("ERROR connecting");
                 break;
 
             case 2:
@@ -123,8 +120,52 @@ int main(int argc, char *argv[])
                 recv(sockfd, f, size, 0);
                 while(1)
                 {
-                    
+                    filehandle = open(filename, O_CREAT | O_EXCL | O_WRONLY, portno);
+                    if(filehandle < 0)
+                        sprintf(filename + strlen(filename)), "%d ", i);
+                    else   
+                        break;
                 }
+                write(filehandle, f, size, 0);
+                close(filehandle);
+                strcpy(buffer, "cat ");
+                strcat(buffer, filename);
+                system(buffer);
+                break;
+
+            case 4: 
+                strcpy(buffer, "store ");
+                printf("Enter filename to store to server:");
+                scanf("%s", filename);
+                filehandle = open(filename, O_RDONLY);
+                if(filehandle < 0)
+                    error("FILE DOES NOT EXIST!\n\n");
+                strcat(buffer, filename);
+                send(sockfd, buffer, 100, 0);
+                stat(filename, &obj);
+                size = obj.st_size;
+                send(sock, &size, sizeof(int), 0);  
+                sendfile(sockfd, filehandle, NULL, size);
+                recv(sockfd, &status, sizeof(int), 0);
+                if(status)
+                    printf("Success: File Stored\n");
+                else 
+                    printf("Failure: File Not Stored\n");
+                break;
+
+            case 5:
+                strcpy(buffer, "quit ");
+                send(sockfd, buffer, 100, 0);
+                recv(sockfd, &status, 100, 0);
+                if(status)
+                {
+                    printf("Server Closed\n Quitting Now...\n\n");
+                    exit(0);
+                }
+                else
+                    printf("Closing Connection Failed...Please Try Again\n\n");
+                break;
+
         }
 
         if((n = send(sockfd,buffer,strlen(buffer),0) < 0))
