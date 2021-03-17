@@ -47,6 +47,7 @@ void error(char *msg)
 **********************************************************************/
 int main(int argc, char *argv[])
 {
+    //declare variables
     int sockfd, portno, n, size, status, filehandle, choice;
     struct sockaddr_in serv_addr;
     struct stat obj;
@@ -57,16 +58,19 @@ int main(int argc, char *argv[])
 
     while(1) 
     {
+        //Print the options list for the user to the terminal
         printf("Enter a choice to perform:\n\n");
         printf("(1) CONNECT - allows to client to connect to server w/ IP address & port #\n");
         printf("(2) LIST - allows server to return a list of files in current directory\n");
         printf("(3) RETRIEVE - allows a client to get a file specified by filename from server\n");
         printf("(4) STORE - allows a client to send a file specified by filename to server\n");
         printf("(5) QUIT - allows the client to terminate the control connection")
-        scanf("%d", &choice);
+        scanf("%d", &choice);       //accept the choice
 
-        switch(choice)
+        //performs whichever choice was chosen
+        switch(choice)      
         {
+            //CONNECT option
             case 1:
                 if (argc < 3) {
                     fprintf(stderr,"usage %s hostname port\n", argv[0]);
@@ -91,6 +95,7 @@ int main(int argc, char *argv[])
                     error("ERROR connecting");
                 break;
 
+            //LIST option
             case 2:
                 strcpy(buffer, "list ");        //copy string "list" to buffer to let server know what to perform
                 send(sockfd, buffer, 100, 0);  //send the buffer to the server
@@ -104,6 +109,7 @@ int main(int argc, char *argv[])
                 system("cat temp.txt");
                 break;
 
+            //RETRIEVE option
             case 3: 
                 strcpy(buffer, "retrieve ")
                 printf("Enter filename to retrieve:" );

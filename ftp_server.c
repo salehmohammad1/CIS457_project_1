@@ -85,8 +85,8 @@ int main(int argc, char *argv[])
      
      while(1)
      {
-         n = recv(newsockfd, buffer, 100, 0);
-         
+         recv(newsockfd, buffer, 100, 0);
+         sscanf(buffer,"%s", command);
          bzero(buffer, 1000);
      }
     
@@ -95,10 +95,6 @@ int main(int argc, char *argv[])
          error("Disconnected\n");
          bzero(buffer,1000);
      }
-
-     else if (n < 0) error("ERROR writing to socket");
-     
-     return 0; 
 	
 }	
 
@@ -144,11 +140,6 @@ void connect(int sk ) {
 
 }
 		}
-
-
-
-
-
 
 void list(int sk) {
 
