@@ -48,7 +48,7 @@ void error(char *msg)
 int main(int argc, char *argv[])
 {
     //declare variables
-    int sockfd, portno, n, size, status, filehandle, choice;
+    int sockfd, portno, size, status, filehandler, choice;
     struct sockaddr_in serv_addr;
     struct stat obj;
     struct hostent *server;
@@ -106,46 +106,66 @@ int main(int argc, char *argv[])
                 
                 //copy string "list" to buffer to let server know what to perform
                 strcpy(buffer, "list ");  
-                  
+
                 //send data to the server and receive data back     
                 send(sockfd, buffer, 100, 0);  
                 recv(sockfd, &size, sizeof(int), 0);  
 
                 //allocates the exact amount of memory needed for the size of the received data
                 f = malloc(size);
+
+                //receive only the data of the size allocated and create a file to hold data retrieved
                 recv(sockfd, f, size, 0);
-                filehandle = creat("temp.txt", O_WRONLY);   //open file for writing only
-                write(filehandle, f, size, 0);
-                close(filehandle);
+                filehandler = creat("temp.txt", O_WRONLY);   //open file for writing only
+
+                //write to the file handler and then close the file to print the contents
+                write(filehandler, f, size, 0);
+                close(filehandler);
                 printf("Listing:\n");
                 system("cat temp.txt");
                 break;
 
             //RETRIEVE option
             case 3: 
+
+                //Copy string "retrieve" to the buffer to tell server what to perform
                 strcpy(buffer, "retrieve ")
+
+                //Retrieve the filename from the user and add to the buffer
                 printf("Enter filename to retrieve:" );
                 scanf("%s", filename);
-                strcat(buffer, filename)
+                strcat(buffer, filename);
+
+                //Send the data to the server and retrieve the information sent back to client
                 send(sockfd, buffer, 100, 0);
                 recv(sockfd, &size, sizeof(int), 0);
+
+                //if the size is 0 then the file doesn't exist
                 if(!size)
                 {
                     printf("ERROR: FILE DOES NOT EXIST\n\n");
                     break;
                 }
+
+                //allocate memory for the file being received from server
                 f = malloc(size);
                 recv(sockfd, f, size, 0);
                 while(1)
                 {
-                    filehandle = open(filename, O_CREAT | O_EXCL | O_WRONLY, portno);
-                    if(filehandle < 0)
+                    //open the file of the filename 
+                    //(O_CREAT: create file if doesn't exist)
+                    //(O_EXCL: exclusive use flag)
+                    //(O_WRONLY: open as writing permissions only)
+                    filehandler = open(filename, O_CREAT | O_EXCL | O_WRONLY, portno);
+                    if(filehandler < 0)
                         sprintf(filename + strlen(filename)), "%d ", i);
                     else   
                         break;
                 }
-                write(filehandle, f, size, 0);
-                close(filehandle);
+
+                //write to the file and close the file
+                write(filehandler, f, size, 0);
+                close(filehandler);
                 strcpy(buffer, "cat ");
                 strcat(buffer, filename);
                 system(buffer);
@@ -153,19 +173,32 @@ int main(int argc, char *argv[])
 
             //STORE option
             case 4: 
+                //Copy string "store" to the buffer to tell server what to perform
                 strcpy(buffer, "store ");
+
+                //Retrieve the filename to be stored to the server and open the file as read only
                 printf("Enter filename to store to server:");
                 scanf("%s", filename);
-                filehandle = open(filename, O_RDONLY);
-                if(filehandle < 0)
+                filehandler = open(filename, O_RDONLY);
+                if(filehandler < 0)
                     error("FILE DOES NOT EXIST!\n\n");
+
+                //Concatenate the filename to the buffer and send to the server    
                 strcat(buffer, filename);
                 send(sockfd, buffer, 100, 0);
+
+                //Obtains information about filename and writes to a pointer in the stat structure obj
                 stat(filename, &obj);
-                size = obj.st_size;
+
+                //Set size to the file size in bytes of the filename inputted
+                size = obj.st_size;     
                 send(sock, &size, sizeof(int), 0);  
-                sendfile(sockfd, filehandle, NULL, size);
+
+                //Sends up to "size" bytes starting at the normal file position for file associated with filename
+                sendfile(sockfd, filehandler, NULL, size);
                 recv(sockfd, &status, sizeof(int), 0);
+
+                //Reveals success of file storage
                 if(status)
                     printf("Success: File Stored\n");
                 else 
@@ -174,7 +207,11 @@ int main(int argc, char *argv[])
 
             //QUIT option
             case 5:
+
+                //Copy string "quit " to the buffer to tell server what to perform
                 strcpy(buffer, "quit ");
+                
+                //send the buffer and receive the status from the server
                 send(sockfd, buffer, 100, 0);
                 recv(sockfd, &status, 100, 0);
                 if(status)
@@ -188,15 +225,5 @@ int main(int argc, char *argv[])
 
         }
 
-        if((n = send(sockfd,buffer,strlen(buffer),0) < 0))
-            error("ERROR writing to socket");
-        bzero(buffer,1000);
-        if((n = read(sockfd,buffer,999))<0)
-            error("ERROR reading from socket");
-        printf("%s\n",buffer);
     }
-    
- 
-    close(sockfd);
-    return 0;
 }
