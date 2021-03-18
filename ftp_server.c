@@ -19,7 +19,6 @@
 #include <strings.h>
 #include <unistd.h>
 #include <sys/stat.h>       //gets file size using stat()
-#include <sys/sendfile.h>   //used for sending a file
 #include <fcntl.h>          //used for file control options
 
 void connect(int);
@@ -139,7 +138,7 @@ void connect(int sk ) {
    }
 
 }
-		}
+
 
 void list(int sk) {
 

@@ -20,7 +20,6 @@
 #include <strings.h>
 #include <unistd.h>
 #include <sys/stat.h>           //gets file size using stat()
-#include <sys/sendfile.h>       //used for sending a file
 #include <fcntl.h>              //used for file control
 
 /**********************************************************************
@@ -35,6 +34,8 @@ void error(char *msg)
     perror(msg);
     exit(0);
 }
+
+ssize_t sendfile(int __out_fd, int __in_fd, off_t *__offset, size_t __count);
 
 /**********************************************************************
 * Name:     main
@@ -64,7 +65,7 @@ int main(int argc, char *argv[])
         printf("(2) LIST - allows server to return a list of files in current directory\n");
         printf("(3) RETRIEVE - allows a client to get a file specified by filename from server\n");
         printf("(4) STORE - allows a client to send a file specified by filename to server\n");
-        printf("(5) QUIT - allows the client to terminate the control connection")
+        printf("(5) QUIT - allows the client to terminate the control connection");
         scanf("%d", &choice);       //accept the choice
 
         //performs whichever choice was chosen
@@ -119,7 +120,7 @@ int main(int argc, char *argv[])
                 filehandler = creat("temp.txt", O_WRONLY);   //open file for writing only
 
                 //write to the file handler and then close the file to print the contents
-                write(filehandler, f, size, 0);
+                write(filehandler, f, size);
                 close(filehandler);
                 printf("Listing:\n");
                 system("cat temp.txt");
@@ -129,7 +130,7 @@ int main(int argc, char *argv[])
             case 3: 
 
                 //Copy string "retrieve" to the buffer to tell server what to perform
-                strcpy(buffer, "retrieve ")
+                strcpy(buffer, "retrieve ");
 
                 //Retrieve the filename from the user and add to the buffer
                 printf("Enter filename to retrieve:" );
@@ -158,13 +159,13 @@ int main(int argc, char *argv[])
                     //(O_WRONLY: open as writing permissions only)
                     filehandler = open(filename, O_CREAT | O_EXCL | O_WRONLY, portno);
                     if(filehandler < 0)
-                        sprintf(filename + strlen(filename)), "%d ", i);
+                        sprintf(filename + strlen(filename), "%d ", i);
                     else   
                         break;
                 }
 
                 //write to the file and close the file
-                write(filehandler, f, size, 0);
+                write(filehandler, f, size);
                 close(filehandler);
                 strcpy(buffer, "cat ");
                 strcat(buffer, filename);
@@ -192,7 +193,7 @@ int main(int argc, char *argv[])
 
                 //Set size to the file size in bytes of the filename inputted
                 size = obj.st_size;     
-                send(sock, &size, sizeof(int), 0);  
+                send(sockfd, &size, sizeof(int), 0);  
 
                 //Sends up to "size" bytes starting at the normal file position for file associated with filename
                 sendfile(sockfd, filehandler, NULL, size);
