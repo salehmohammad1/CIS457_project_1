@@ -37,9 +37,6 @@ void error(char *msg)
     exit(0);
 }
 
-
-
-
 /**********************************************************************
 * Name:     main
 * Author:   Dr. Vijay Bhuse, additions Taylor Rieger
