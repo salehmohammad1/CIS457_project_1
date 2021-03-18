@@ -42,7 +42,7 @@ void error(char *msg)
 
 /**********************************************************************
 * Name:     main
-* Author:   Dr. Vijay Bhuse, additions Taylor Rieger
+* Author:   Dr. Vijay Bhuse, additions Taylor Rieger and Mohammad Saleh
 * Date:     March 16, 2021
 * Description: Connects the server to the client and responds to the 
                client depending what option they choose.

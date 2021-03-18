@@ -35,7 +35,6 @@ void error(char *msg)
     exit(0);
 }
 
-ssize_t sendfile(int __out_fd, int __in_fd, off_t *__offset, size_t __count);
 
 /**********************************************************************
 * Name:     main
@@ -196,7 +195,7 @@ int main(int argc, char *argv[])
                 send(sockfd, &size, sizeof(int), 0);  
 
                 //Sends up to "size" bytes starting at the normal file position for file associated with filename
-                sendfile(sockfd, filehandler, NULL, size);
+                sendto(sockfd, buffer, size, 0, serv_addr.sin_addr, server->h_length);
                 recv(sockfd, &status, sizeof(int), 0);
 
                 //Reveals success of file storage
