@@ -1,4 +1,4 @@
-/**********************************************************************
+/*********************************************************************
 * Course:       CIS 457 - Project 1
 * Author(s):    Taylor Rieger & Mohammed Saleh
 * Date:         March 16, 2021
@@ -19,12 +19,15 @@
 #include <strings.h>
 #include <unistd.h>
 #include <sys/stat.h>       //gets file size using stat()
+#include <sys/sendfile.h>   //used for sending a file
 #include <fcntl.h>          //used for file control options
 
 void connect(int);
 
 void list(int);
-
+void front(int);
+void sending (int);
+void storage(int); //stores files in the directory of the server, pass scoket number
 
 
 /**********************************************************************
@@ -42,13 +45,16 @@ void error(char *msg)
 
 /**********************************************************************
 * Name:     main
-* Author:   Dr. Vijay Bhuse, additions Taylor Rieger and Mohammad Saleh
+* Author:   Dr. Vijay Bhuse, additions Taylor Rieger
 * Date:     March 16, 2021
 * Description: Connects the server to the client and responds to the 
                client depending what option they choose.
 * @param argc 
 * @param *argv 
 **********************************************************************/
+int i;
+int clientcon;
+
 int main(int argc, char *argv[])
 {
      int sockfd, newsockfd, portno, clilen, n, filehandle, size, c, i;
@@ -73,33 +79,53 @@ int main(int argc, char *argv[])
      if (bind(sockfd, (struct sockaddr *) &serv_addr,
               sizeof(serv_addr)) < 0) 
               error("ERROR on binding");
+     
+
+
      listen(sockfd,5);
-   
-     clilen = sizeof(cli_addr);
+      
+	i=1;
+	while(i) {
+
+if(!clientcon)	{	
+
      newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen); 
-     i = 1;
-     if (newsockfd < 0) 
+    
+
+
+      if (newsockfd < 0) 
           error("ERROR on accept");
      bzero(buffer,1000);
      
-     while(1)
-     {
-         recv(newsockfd, buffer, 100, 0);
-         sscanf(buffer,"%s", command);
-         bzero(buffer, 1000);
-     }
-    
-     if (n == 0) 
-     {
-         error("Disconnected\n");
-         bzero(buffer,1000);
-     }
-	
-}	
+}
+     
+else {
+	clientcon = 1; 
+}}
+
+   pid = fork();
+        if (pid < 0) 
+	{
+           error("ERROR on fork");
+	}
+        if (pid == 0)  
+	{
+           close(sockfd);
+           dostuff(newsockfd);
+           exit(1);
+        }
+        else
+	{
+	   wait (&status);
+	   clientcon = status;
+	}
+}
+
+
+}
+
 
 void connect(int sk ) {
-
-
 
  int n;
    char buffer[256];
@@ -128,7 +154,7 @@ void connect(int sk ) {
    //store command:receive a file from client and store in server directory
    if (strcmp(buffer,"STORE")==0) {
         write(sk, "STORE received",14); //ack command(fixes consecutive write short message merge)
-        fStore(sk); //run function to store file, pass socket number
+        storage(sk); //run function to store file, pass socket number
    }
    //Disconnect from the server if QUIT is selected
    if(strcmp(buffer,"QUIT")==0){
@@ -138,7 +164,7 @@ void connect(int sk ) {
    }
 
 }
-
+		}
 
 void list(int sk) {
 
@@ -158,4 +184,74 @@ void list(int sk) {
 	if (n<0){
 		error("error establishing scoket ");
 	}}
+//Send file to server
+void sending  (int sk)
+{
+  char cBuff[256];//communication buffer
+  FILE *fPoint; //file pointer
+  char fName[256];//file name
+  unsigned long fSize=0;//file size
+
+  bzero(fName,256);
+  read(sk, fName, 255);//read file name
+  fPoint = fopen(fName,"rb");//open text file
+  
+  if (fPoint == NULL)
+  {
+    printf("Error opening file.\n");
+  }
+  else
+  {
+    //send size of file
+    fseek(fPoint,0, SEEK_END);
+    fSize = ftell(fPoint);//get curent file pointer
+    fseek(fPoint, 0, SEEK_SET);
+    sprintf(cBuff,"%ld",fSize);
+    write(sk, cBuff, strlen(cBuff));//send size of file
+    bzero(cBuff,256);
+    read(sk,cBuff,255);//get ack
+    while(fgets(cBuff,255,fPoint) != NULL)
+    {
+      write(sk, cBuff, strlen(cBuff));//send file data
+    }
+    printf("File Sent.\n");
+    fclose(fPoint);//close file
+  }
+}
+
+//store file from client
+void storage (int sk)
+{
+  char fName[256];//file name buffer
+  char rBuff[256];//receive buffer
+  FILE *fPoint;//file pointer
+  long int fSize = 0; //size of file
+  long int count = 0;//count bytes of file delivered
+  bzero(fName,256);//clear file name buffer
+  read(sk, fName, 255);//read file name
+  fPoint = fopen(fName, "wb");//open file with name in write binary mode
+  if (fPoint == NULL) //if file open error
+  {
+    printf("Error opening file.\n"); //notify user of file open error
+    write(sk, "Server file error",17);//file open error
+  }
+  else
+  {
+    write(sk, "Name received",13);//file name read/open ack
+    bzero(rBuff,256);//clear receive buffer
+    read(sk, rBuff, 255);//read file length
+    //file length ack(fixes consecutive write short message merge)
+    write(sk, "File length received",20);
+    fSize = atol(rBuff);//convert file size from buffer into number
+    //write through file until length of file completed.
+    while(count<fSize)
+    {
+      bzero(rBuff,256);//clear receive buffer
+      read(sk,rBuff,255);//read data
+      count+=strlen(rBuff);//count data length
+      fprintf(fPoint, "%s", rBuff);//put data in new file
+    }
+    printf("File received.\n");//notify user of completion
+    fclose (fPoint);//close file
+  }
 
