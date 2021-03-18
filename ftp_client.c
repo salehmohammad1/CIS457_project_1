@@ -22,6 +22,8 @@
 #include <sys/stat.h>           //gets file size using stat()
 #include <fcntl.h>              //used for file control
 
+#define SIZE 1024
+
 /**********************************************************************
 * Name:     error
 * Author:   Dr. Vijay Bhuse
@@ -34,6 +36,8 @@ void error(char *msg)
     perror(msg);
     exit(0);
 }
+
+
 
 
 /**********************************************************************
@@ -52,7 +56,8 @@ int main(int argc, char *argv[])
     struct sockaddr_in serv_addr;
     struct stat obj;
     struct hostent *server;
-    char buffer[1000], command[5], filename[20], *f;
+    char buffer[1000], command[5], filename[20], *f, data[1024] = {0};
+    FILE *fp;
     
     int i = 1;
 
@@ -79,10 +84,12 @@ int main(int argc, char *argv[])
                 }
                 //save the port number and open socket
                 portno = atoi(argv[2]);
+
+                //initiate the connection
                 sockfd = socket(AF_INET, SOCK_STREAM, 0);
                 if (sockfd < 0) 
                     error("ERROR opening socket");
-                
+                printf("Server socket created successfully.");
                 //get the port number of the server
                 server = gethostbyname(argv[1]);
 
@@ -91,7 +98,7 @@ int main(int argc, char *argv[])
                     fprintf(stderr,"ERROR, no such host\n");
                     exit(0);
                 }
-                //initiate the connection
+                
                 bzero((char *) &serv_addr, sizeof(serv_addr));
                 serv_addr.sin_family = AF_INET;
                 bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
@@ -99,6 +106,7 @@ int main(int argc, char *argv[])
                 //error checking
                 if(connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0) 
                     error("ERROR connecting");
+                printf("Socket Connection Successful\n");
                 break;
 
             //LIST option
@@ -179,30 +187,20 @@ int main(int argc, char *argv[])
                 //Retrieve the filename to be stored to the server and open the file as read only
                 printf("Enter filename to store to server:");
                 scanf("%s", filename);
-                filehandler = open(filename, O_RDONLY);
-                if(filehandler < 0)
-                    error("FILE DOES NOT EXIST!\n\n");
+                fp = fopen(filename, "r");
+                if(fp == NULL)
+                    error("ERROR: File not able to read.");
 
                 //Concatenate the filename to the buffer and send to the server    
                 strcat(buffer, filename);
                 send(sockfd, buffer, 100, 0);
 
-                //Obtains information about filename and writes to a pointer in the stat structure obj
-                stat(filename, &obj);
-
-                //Set size to the file size in bytes of the filename inputted
-                size = obj.st_size;     
-                send(sockfd, &size, sizeof(int), 0);  
-
-                //Sends up to "size" bytes starting at the normal file position for file associated with filename
-                sendto(sockfd, buffer, size, 0, serv_addr.sin_addr, server->h_length);
-                recv(sockfd, &status, sizeof(int), 0);
-
-                //Reveals success of file storage
-                if(status)
-                    printf("Success: File Stored\n");
-                else 
-                    printf("Failure: File Not Stored\n");
+                while(fgets(data, SIZE, fp) != NULL)
+                {
+                    if(send(sockfd, data, sizeof(data), 0) == -1)
+                        error("ERROR: Could not send file.\n");
+                    bzero(data, SIZE);    
+                }
                 break;
 
             //QUIT option
